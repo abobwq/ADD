@@ -54,7 +54,14 @@ def load_data(
         class_names = [bf.basename(path).split("_")[0] for path in all_files]
         sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
         classes = [sorted_classes[x] for x in class_names]
-    if rgb:
+    if on_the_fly:
+      dataset = MinigridOnTheFlyDataset(
+          num_samples=10000000, #10000000
+          grid_size=13,
+          num_walls=60,
+          resolution=16,
+      )
+    elif rgb:
         dataset = ImageDataset(
             image_size,
             all_files,
