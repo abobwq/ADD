@@ -130,6 +130,89 @@ def _list_numpy_files_recursively(data_dir):
             results.extend(_list_numpy_files_recursively(full_path))
     return results
 
+class MinigridOnTheFlyDataset(Dataset):
+    def __init__(
+        self,
+        num_samples,
+        grid_size=13,
+        num_walls=60,
+        resolution=16,
+        class_fn=None,   # optional label generator
+        seed=None,
+    ):
+        self.num_samples = num_samples
+        self.grid_size = grid_size
+        self.num_walls = num_walls
+        self.resolution = resolution
+        self.class_fn = class_fn
+        self.base = list(range(grid_size ** 2))
+        self.rng = random.Random(seed)
+
+    def __len__(self):
+        # needed by DataLoader for batching/shuffling/epoch length
+        return self.num_samples
+
+    def _generate_one(self, idx):
+        # you can optionally make this deterministic per idx:
+        # rng = random.Random(idx)
+        rng = self.rng
+
+        wall_idxs = rng.choices(self.base, k=rng.randint(0, self.num_walls - 1))
+        start_idx, end_idx = rng.sample(self.base, 2)
+        start_direction = rng.randrange(4)
+
+        grid_env = np.zeros((self.grid_size, self.grid_size, 3), dtype=np.uint8)
+
+        # walls in R
+        for wall_idx in wall_idxs:
+            grid_env[wall_idx // self.grid_size, wall_idx % self.grid_size, 0] = 255
+
+        # start in G
+        grid_env[start_idx // self.grid_size, start_idx % self.grid_size, 0] = 0
+        grid_env[start_idx // self.grid_size, start_idx % self.grid_size, 1] = 255
+
+        # goal in B
+        grid_env[end_idx // self.grid_size, end_idx % self.grid_size, 0] = 0
+        grid_env[end_idx // self.grid_size, end_idx % self.grid_size, 2] = 255
+
+        # same padding/border logic as repo
+        padded_img = np.pad(grid_env, ((1, 2), (1, 2), (0, 0)), mode="constant", constant_values=0)
+        padded_img[0, :, 0] = 255
+        padded_img[:, 0, 0] = 255
+        padded_img[-2:, :, 0] = 255
+        padded_img[:, -2:, 0] = 255
+
+        x_direction = 0
+        y_direction = 0
+        if start_direction == 0:
+            x_direction = 1
+        elif start_direction == 1:
+            x_direction = -1
+        elif start_direction == 2:
+            y_direction = 1
+        elif start_direction == 3:
+            y_direction = -1
+        else:
+            raise NotImplementedError
+
+        start_idx_x, start_idx_y = np.where(padded_img[:, :, 1] == 255)
+        padded_img[start_idx_x + x_direction, start_idx_y + y_direction, 1] = 128
+
+        return padded_img
+
+    def __getitem__(self, idx):
+        arr = self._generate_one(idx)
+
+        # normalize to [-1, 1], same as your existing dataset
+        arr = arr.astype(np.float32) / 127.5 - 1.0
+
+        out_dict = {}
+        if self.class_fn is not None:
+            out_dict["y"] = np.array(self.class_fn(idx), dtype=np.int64)
+
+        # CHW for PyTorch
+        arr = np.transpose(arr, (2, 0, 1))
+        return torch.from_numpy(arr), out_dict
 
 class ImageDataset(Dataset):
     def __init__(
