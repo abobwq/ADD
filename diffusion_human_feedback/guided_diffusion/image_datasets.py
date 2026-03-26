@@ -24,6 +24,7 @@ def load_data(
     deterministic=True,
     random_crop=False,
     random_flip=True,
+    on_the_fly=True,
     rgb=True,
 ):
     """
