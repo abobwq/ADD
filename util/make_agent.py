@@ -196,7 +196,7 @@ def make_agent(name, env, args, device='cpu'):
         adv_use_popart=vars(args).get('adv_use_popart', False),
         use_categorical_adv=vars(args).get('use_categorical_adv', False),
         use_goal=vars(args).get('sparse_rewards', False),
-        num_goal_bins=vars(args).get('num_goal_bins', 1))
+        num_goal_bins=vars(args).get('num_goal_bins', 1)).to(device)
 
     algo = None
     storage = None

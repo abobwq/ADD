@@ -16,6 +16,8 @@ import gym
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from baselines.logger import HumanOutputFormat
+import torch_xla
+import torch_xla.core.xla_model as xm
 
 display = None
 
@@ -75,11 +77,16 @@ if __name__ == '__main__':
         logging.disable(logging.CRITICAL)
 
     # === Determine device ====
+    '''
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda:0" if args.cuda else "cpu")
     if 'cuda' in device.type:
         torch.backends.cudnn.benchmark = True
         print('Using CUDA\n')
+    '''
+    # CHANGED: Use PyTorch/XLA to get the TPU device
+    device = xm.xla_device()
+    print(f'Using XLA Device: {device}\n')
 
     # === fix the seed ===
     seed(args.seed)
