@@ -40,6 +40,13 @@ warnings.filterwarnings("ignore")
 # Suppress TensorFlow C++ CUDA warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 if __name__ == '__main__':
+    # <--- ADD THESE 4 LINES --->
+    import torch.multiprocessing as mp
+    try:
+        mp.set_start_method('spawn')
+    except RuntimeError:
+        pass # Prevents crashing if it was already set
+    # <------------------------->
     os.environ["OMP_NUM_THREADS"] = "1"
 
     args = parser.parse_args()
