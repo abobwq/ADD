@@ -33,7 +33,12 @@ from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env, m
 from eval import Evaluator
 import torch as th
 # import wandb
+import warnings
+# Suppress Python warnings (Gym, Google Auth)
+warnings.filterwarnings("ignore")
 
+# Suppress TensorFlow C++ CUDA warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 if __name__ == '__main__':
     os.environ["OMP_NUM_THREADS"] = "1"
 
