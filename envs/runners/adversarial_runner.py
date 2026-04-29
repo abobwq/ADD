@@ -791,6 +791,7 @@ class AdversarialRunner(object):
         return env_return
 
     def run(self):
+        print("  -> [DEBUG Runner] Starting rollout collection...")
         args = self.args
 
         adversary_env = self.agents["adversary_env"]
@@ -942,7 +943,7 @@ class AdversarialRunner(object):
                 discard_grad=True,
             )
         # ==== ACCEL end ====
-
+        print("  -> [DEBUG Runner] Rollouts collected! Starting network update...")
         if args.use_plr:
             self._reconcile_level_store_and_samplers()
             if self.use_editor:
@@ -1080,5 +1081,5 @@ class AdversarialRunner(object):
                     ],
                 }
             )
-
+        print("  -> [DEBUG Runner] Network update complete!")
         return stats

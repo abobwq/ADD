@@ -186,7 +186,10 @@ if __name__ == '__main__':
     num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
     print("total num_updates:", num_updates)
     for j in range(initial_update_count, num_updates):
+        print(f"\n--- [DEBUG] Starting Update {j} ---")
+        print("[DEBUG] Calling train_runner.run()...")
         stats = train_runner.run()
+        print("[DEBUG] Successfully finished train_runner.run()!")
         # wandb.log({
         #     'tutor_loss': tutor_loss
         # }, step = j)
