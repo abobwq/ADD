@@ -573,11 +573,11 @@ class AdversarialRunner(object):
                     action_log_prob = action_log_dist.gather(-1, action)
                 else:
                     action_log_prob = action_log_dist
-            print("    -> [DEBUG] Forcing TPU sync via action.cpu()... (Might take 5+ mins on step 1)")
+            #print("    -> [DEBUG] Forcing TPU sync via action.cpu()... (Might take 5+ mins on step 1)")
             # Observe reward and next obs
             reset_random = self.is_dr and not args.use_plr
             _action = agent.process_action(action.cpu())
-            print("    -> [DEBUG] TPU sync complete! Action received.")
+            #print("    -> [DEBUG] TPU sync complete! Action received.")
             if is_env:
                 obs, reward, done, infos = self.ued_venv.step_adversary(_action)
             else:
