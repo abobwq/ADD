@@ -373,7 +373,7 @@ class RolloutStorage(object):
             num_processes = self.actions.shape[1]
             traj = []
             for b in range(num_processes):
-                action_str = ' '.join([str(a.item()) for a in self.actions[:,b,0]])
+                action_str = ' '.join([str(int(a)) for a in self.actions[:,b,0].cpu().tolist()])
                 traj.append(action_str)
             return traj
         else:
