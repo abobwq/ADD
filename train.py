@@ -39,6 +39,9 @@ warnings.filterwarnings("ignore")
 
 # Suppress TensorFlow C++ CUDA warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# <--- ADD THIS LINE to prevent TPU syncs during distribution creation --->
+import torch.distributions as dist
+dist.Distribution.set_default_validate_args(False)
 if __name__ == '__main__':
     # <--- ADD THESE 4 LINES --->
     import torch.multiprocessing as mp
