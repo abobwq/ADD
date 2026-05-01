@@ -12,7 +12,7 @@ import timeit
 import random
 
 import numpy as np
-import torch
+#import torch
 from torchvision import utils as vutils
 
 from envs.registration import make as gym_make
@@ -57,6 +57,8 @@ def init(module, weight_init, bias_init, gain=1):
 
 
 def safe_checkpoint(state_dict, path, index=None, archive_interval=None):
+    # Add the import here!
+    import torch
     filename, ext = os.path.splitext(path)
     path_tmp = f'{filename}_tmp{ext}'
     torch.save(state_dict, path_tmp)
@@ -78,6 +80,7 @@ def cleanup_log_dir(log_dir, pattern='*'):
             os.remove(f)
 
 def seed(seed):
+    import torch
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -98,6 +101,9 @@ def str2bool(v):
 def save_images(images, path=None, normalize=False, channels_first=False):
     if path is None:
         return
+
+    # Add the import here!
+    import torch
 
     if isinstance(images, (list, tuple)):
         images = torch.tensor(np.stack(images), dtype=torch.float)
