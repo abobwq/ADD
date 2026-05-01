@@ -15,7 +15,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import random 
-import torch_xla
 
 class PPO():
     """
@@ -61,6 +60,7 @@ class PPO():
 
     def update(self, rollouts, discard_grad=False):
         print("    -> [DEBUG PPO] Entering update loop...")
+        import torch_xla
         if rollouts.use_popart:
             value_preds = rollouts.denorm_value_preds
         else:

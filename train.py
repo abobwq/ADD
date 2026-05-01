@@ -16,8 +16,6 @@ import gym
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from baselines.logger import HumanOutputFormat
-import torch_xla
-import torch_xla.core.xla_model as xm
 
 display = None
 
@@ -42,16 +40,17 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # <--- ADD THIS LINE to prevent TPU syncs during distribution creation --->
 import torch.distributions as dist
 dist.Distribution.set_default_validate_args(False)
-import torch.multiprocessing as mp
 
 if __name__ == '__main__':
-    # <--- ADD THESE 4 LINES --->
+    # 1. Start multiprocessing safely
+    import torch.multiprocessing as mp
     try:
         mp.set_start_method('spawn', force=True)
     except RuntimeError:
         pass # Prevents crashing if it was already set
-    # <------------------------->
     os.environ["OMP_NUM_THREADS"] = "1"
+    # 2. Tell the XLA backend not to preallocate all memory
+    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
     args = parser.parse_args()
     
@@ -100,18 +99,20 @@ if __name__ == '__main__':
         torch.backends.cudnn.benchmark = True
         print('Using CUDA\n')
     '''
-    # CHANGED: Use PyTorch/XLA to get the TPU device
-    device = xm.xla_device()
-    print(f'Using XLA Device: {device}\n')
 
     # === fix the seed ===
     seed(args.seed)
     
-    # === Create parallel envs ===
+    # 3. Create parallel envs (Child processes spawn HERE)
     venv, ued_venv = create_parallel_env(args)
 
     is_training_env = args.ued_algo in ['paired', 'flexible_paired', 'minimax']
     is_paired = args.ued_algo in ['paired', 'flexible_paired']
+
+    import torch_xla.core.xla_model as xm
+    device = xm.xla_device()
+    cpu_device = torch.device('cpu')
+    print(f'Using XLA Device: {device}\n')
 
     agent = make_agent(name='agent', env=venv, args=args, device=device)
     adversary_agent, adversary_env = None, None
