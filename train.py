@@ -42,11 +42,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # <--- ADD THIS LINE to prevent TPU syncs during distribution creation --->
 import torch.distributions as dist
 dist.Distribution.set_default_validate_args(False)
+import torch.multiprocessing as mp
+
 if __name__ == '__main__':
     # <--- ADD THESE 4 LINES --->
-    import torch.multiprocessing as mp
     try:
-        mp.set_start_method('spawn')
+        mp.set_start_method('spawn', force=True)
     except RuntimeError:
         pass # Prevents crashing if it was already set
     # <------------------------->
