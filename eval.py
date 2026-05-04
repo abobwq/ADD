@@ -239,16 +239,16 @@ class Evaluator(object):
 			print(f"[DEBUG]   -> Creating env: {env_name}")
 			make_fn = [lambda: Evaluator.make_env(env_name, record_video, **kwargs)]*self.num_processes
 			# --- STABILITY FIX: Use DummyVecEnv if processes == 1 or to bypass hangs ---
-        	if self.num_processes > 1:
-                # If you MUST use parallel eval, use a small number (e.g., 2-4)
-            	venv = ParallelAdversarialVecEnv(make_fn, adversary=False, is_eval=True)
-            else:
-                # DummyVecEnv runs on the main process thread (very stable for XLA)
-                from baselines.common.vec_env import DummyVecEnv
-                venv = DummyVecEnv(make_fn)
+			if self.num_processes > 1:
+				# If you MUST use parallel eval, use a small number (e.g., 2-4)
+				venv = ParallelAdversarialVecEnv(make_fn, adversary=False, is_eval=True)
+			else:
+				# DummyVecEnv runs on the main process thread (very stable for XLA)
+				from baselines.common.vec_env import DummyVecEnv
+				venv = DummyVecEnv(make_fn)
             
-            venv = Evaluator.wrap_venv(venv, env_name, device=device)
-            self.venv[env_name] = venv
+			venv = Evaluator.wrap_venv(venv, env_name, device=device)
+			self.venv[env_name] = venv
 
 		self.is_discrete_actions = is_discrete_actions(self.venv[env_names[0]])
 
