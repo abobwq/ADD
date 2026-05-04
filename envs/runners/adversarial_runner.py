@@ -26,7 +26,6 @@ from diffusion_human_feedback.predictor import Tutor
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import torch_xla.core.xla_model as xm
 
 class AdversarialRunner(object):
     """
@@ -575,6 +574,7 @@ class AdversarialRunner(object):
                     action_log_prob = action_log_dist
 
                 # Force XLA to compile the forward pass and clear the lazy graph
+                import torch_xla.core.xla_model as xm
                 xm.mark_step()
 
             # Observe reward and next obs

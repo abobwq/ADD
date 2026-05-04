@@ -15,7 +15,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import random 
-import torch_xla
 
 class PPO():
     """
@@ -60,6 +59,7 @@ class PPO():
         return total_norm
 
     def update(self, rollouts, discard_grad=False):
+        import torch_xla
         print("    -> [DEBUG PPO] Entering update loop...")
         if rollouts.use_popart:
             value_preds = rollouts.denorm_value_preds
@@ -144,7 +144,7 @@ class PPO():
         # 1. Sync the device first to finish all TPU computations
         torch_xla.sync()
         print("    -> [DEBUG PPO] TPU Sync complete!")
-        
+
         # 2. NOW you can safely pull the accumulated tensor values 
         # back to the CPU and divide them
         value_loss_epoch = (value_loss_epoch / num_updates).item()
