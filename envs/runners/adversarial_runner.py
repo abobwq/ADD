@@ -26,7 +26,7 @@ from diffusion_human_feedback.predictor import Tutor
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
+import torch_xla.core.xla_model as xm
 
 class AdversarialRunner(object):
     """
@@ -574,6 +574,9 @@ class AdversarialRunner(object):
                 else:
                     action_log_prob = action_log_dist
 
+                # Force XLA to compile the forward pass and clear the lazy graph
+                xm.mark_step()
+
             # Observe reward and next obs
             reset_random = self.is_dr and not args.use_plr
             _action = agent.process_action(action.cpu())
@@ -792,6 +795,7 @@ class AdversarialRunner(object):
 
     def run(self):
         args = self.args
+        print("\n[DEBUG] === STARTING NEW EPOCH ===")
 
         adversary_env = self.agents["adversary_env"]
         agent = self.agents["agent"]
@@ -812,6 +816,7 @@ class AdversarialRunner(object):
         if self.is_training and not student_discard_grad:
             self.student_grad_updates += 1
 
+        print("[DEBUG] Phase 1: adversary_env rollout starting...")
         # Generate a batch of adversarial environments
         env_info = self.agent_rollout(
             agent=adversary_env,
@@ -823,6 +828,7 @@ class AdversarialRunner(object):
             update_level_sampler=False,
         )
 
+        print("[DEBUG] Phase 2: protagonist agent rollout starting...")
         # Run agent episodes
         level_sampler, is_updateable = self._get_level_sampler("agent")
         agent_info = self.agent_rollout(
@@ -953,6 +959,7 @@ class AdversarialRunner(object):
             agent_info, adversary_agent_info, adversary_env
         )
 
+        print("[DEBUG] Phase 3: adversary_env update starting...")
         adversary_env_info = defaultdict(float)
         if self.is_training and self.is_training_env:
             with torch.no_grad():
@@ -977,12 +984,14 @@ class AdversarialRunner(object):
                     "update_info": info,
                 }
             )
+            print("[DEBUG] Phase 3: adversary_env update COMPLETE.")
 
         if self.is_training:
             self.num_updates += 1
             if self.is_paired:
                 self.num_updates += 1
 
+        print("[DEBUG] === EPOCH COMPLETE. Compiling stats... ===\n")
         # === LOGGING ===
         # Only update env-related stats when run generates new envs (not level replay)
         log_replay_complexity = level_replay and args.log_replay_complexity
