@@ -30,6 +30,8 @@ from envs.runners.adversarial_runner import AdversarialRunner
 from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env, make_plr_args, save_images, seed
 from eval import Evaluator
 import torch as th
+import torch_xla.core.xla_model as xm
+
 # import wandb
 
 if __name__ == '__main__':
@@ -75,11 +77,16 @@ if __name__ == '__main__':
         logging.disable(logging.CRITICAL)
 
     # === Determine device ====
+    '''
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda:0" if args.cuda else "cpu")
     if 'cuda' in device.type:
         torch.backends.cudnn.benchmark = True
         print('Using CUDA\n')
+    '''
+    device = xm.xla_device()
+    cpu_device = torch.device('cpu')
+    print(f'Using XLA Device: {device}\n')
 
     # === fix the seed ===
     seed(args.seed)
