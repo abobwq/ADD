@@ -182,10 +182,12 @@ if __name__ == '__main__':
 
     # === Load checkpoint ===
     if args.checkpoint and os.path.exists(checkpoint_path):
+        print("[DEBUG] Loading checkpoint...")
         checkpoint_states = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
         last_logged_update_at_restart = filewriter.latest_tick() # ticks are 0-indexed updates
         train_runner.load_state_dict(checkpoint_states['runner_state_dict'])
         initial_update_count = train_runner.num_updates
+        print("[DEBUG] Checkpoint loaded.")
         # for tutor in train_runner.tutor_list:
         #     ckpt = th.load(os.path.join(log_dir, args.xpid, 'tutors/model.pt'))
         #     tutor.load_model(ckpt)
@@ -201,6 +203,7 @@ if __name__ == '__main__':
     # === Set up Evaluator ===
     evaluator = None
     if args.test_env_names:
+        print("[DEBUG] Initializing Evaluator (CPU)...")
         evaluator = Evaluator(
             args.test_env_names.split(','), 
             num_processes=args.test_num_processes, 
@@ -211,6 +214,7 @@ if __name__ == '__main__':
             use_global_critic=args.use_global_critic,
             use_global_policy=args.use_global_policy,
             device=device)
+        print("[DEBUG] Evaluator initialized.")
     # === Train === 
     last_checkpoint_idx = getattr(train_runner, args.checkpoint_basis)
     update_start_time = timer()
