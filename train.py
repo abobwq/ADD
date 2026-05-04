@@ -45,6 +45,8 @@ if __name__ == '__main__':
 
     print("[DEBUG] train.py started!")
     os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ['MPI_COMMON_ENV'] = '0'  # Disable MPI detection
+    os.environ['DEBIAN_FRONTEND'] = 'noninteractive'
 
     args = parser.parse_args()
     
