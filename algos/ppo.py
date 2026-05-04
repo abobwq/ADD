@@ -60,6 +60,7 @@ class PPO():
         return total_norm
 
     def update(self, rollouts, discard_grad=False):
+        print("    -> [DEBUG PPO] Entering update loop...")
         if rollouts.use_popart:
             value_preds = rollouts.denorm_value_preds
         else:
@@ -77,6 +78,7 @@ class PPO():
             grad_norms = []
 
         for e in range(self.ppo_epoch):
+            print(f"    -> [DEBUG PPO] Epoch {e} - generating data...")
             if self.actor_critic.is_recurrent:
                 data_generator = rollouts.recurrent_generator(
                     advantages, self.num_mini_batch)
@@ -85,6 +87,7 @@ class PPO():
                     advantages, self.num_mini_batch)
 
             for sample in data_generator:
+                print("      -> [DEBUG PPO] Pushed batch to XLA, running step...")
                 with torch_xla.step():
                     obs_batch, recurrent_hidden_states_batch, actions_batch, \
                     value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, \
@@ -134,12 +137,14 @@ class PPO():
                     value_loss_epoch += value_loss.detach()
                     action_loss_epoch += action_loss.detach()
                     dist_entropy_epoch += dist_entropy.detach()
+                print("      -> [DEBUG PPO] XLA step traced!")
 
         num_updates = self.ppo_epoch * self.num_mini_batch
-
+        print("    -> [DEBUG PPO] Hitting torch_xla.sync()... (THIS MIGHT TAKE 5+ MINS ON THE FIRST RUN)")
         # 1. Sync the device first to finish all TPU computations
         torch_xla.sync()
-
+        print("    -> [DEBUG PPO] TPU Sync complete!")
+        
         # 2. NOW you can safely pull the accumulated tensor values 
         # back to the CPU and divide them
         value_loss_epoch = (value_loss_epoch / num_updates).item()
