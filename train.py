@@ -78,16 +78,10 @@ if __name__ == '__main__':
         logging.disable(logging.CRITICAL)
 
     # === Determine device ====
-    '''
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
-    device = torch.device("cuda:0" if args.cuda else "cpu")
-    if 'cuda' in device.type:
-        torch.backends.cudnn.benchmark = True
-        print('Using CUDA\n')
-    '''
-    device = xm.xla_device()
+    # DO NOT initialize the XLA device yet! 
+    # We use the CPU device for the initial setup to prevent the multiprocessing deadlock.
     cpu_device = torch.device('cpu')
-    print(f'Using XLA Device: {device}\n')
+    print('Using CPU for initial model creation...\n')
 
     # === fix the seed ===
     seed(args.seed)
@@ -99,16 +93,19 @@ if __name__ == '__main__':
 
     is_training_env = args.ued_algo in ['paired', 'flexible_paired', 'minimax']
     is_paired = args.ued_algo in ['paired', 'flexible_paired']
-    print("[DEBUG] Initializing Models (Actor, Critic, etc)...")
-    agent = make_agent(name='agent', env=venv, args=args, device=device)
+    
+    print("[DEBUG] Initializing Models (Actor, Critic, etc) on CPU...")
+    # Pass cpu_device here so the models stay in host memory
+    agent = make_agent(name='agent', env=venv, args=args, device=cpu_device)
     adversary_agent, adversary_env = None, None
+    
     if is_paired:
-        adversary_agent = make_agent(name='adversary_agent', env=venv, args=args, device=device)
+        adversary_agent = make_agent(name='adversary_agent', env=venv, args=args, device=cpu_device)
 
     if is_training_env:
-        adversary_env = make_agent(name='adversary_env', env=venv, args=args, device=device)
+        adversary_env = make_agent(name='adversary_env', env=venv, args=args, device=cpu_device)
     if args.ued_algo == 'domain_randomization' and args.use_plr and not args.use_reset_random_dr:
-        adversary_env = make_agent(name='adversary_env', env=venv, args=args, device=device)
+        adversary_env = make_agent(name='adversary_env', env=venv, args=args, device=cpu_device)
         adversary_env.random()
 
     # === Create runner ===
@@ -116,6 +113,7 @@ if __name__ == '__main__':
     plr_args = None
     if args.use_plr:
         plr_args = make_plr_args(args, venv.observation_space, venv.action_space)
+        
     train_runner = AdversarialRunner(
         args=args,
         venv=venv,
@@ -126,7 +124,26 @@ if __name__ == '__main__':
         flexible_protagonist=False,
         train=True,
         plr_args=plr_args,
-        device=device)
+        device=cpu_device) # Pass CPU device here too
+        
+    print("[DEBUG] Runner created successfully! Background workers spawned.")
+
+    # === NOW INITIALIZE XLA AND MOVE MODELS ====
+    print("[DEBUG] Initializing XLA and transferring models to TPU...")
+    device = xm.xla_device()
+    print(f'Using XLA Device: {device}\n')
+    
+    # Update the runner's internal device tracker
+    train_runner.device = device
+    
+    # Explicitly move all initialized agent models to the TPU
+    for key, agent_obj in train_runner.agents.items():
+        if agent_obj is not None:
+            # Assuming your make_agent object has a standard .to(device) method.
+            # If not, you may need to call agent_obj.algo.actor_critic.to(device)
+            agent_obj.to(device)
+
+    print("[DEBUG] Setup Complete. Entering main loop...")
 
     # === Configure checkpointing ===
     timer = timeit.default_timer
