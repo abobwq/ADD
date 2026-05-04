@@ -138,24 +138,6 @@ if __name__ == '__main__':
         
     print("[DEBUG] Runner created successfully! Background workers spawned.")
 
-    # === NOW INITIALIZE XLA AND MOVE MODELS ====
-    print("[DEBUG] Initializing XLA and transferring models to TPU...")
-    import torch_xla.core.xla_model as xm
-    device = xm.xla_device()
-    print(f'Using XLA Device: {device}\n')
-    
-    # Update the runner's internal device tracker
-    train_runner.device = device
-    
-    # Explicitly move all initialized agent models to the TPU
-    for key, agent_obj in train_runner.agents.items():
-        if agent_obj is not None:
-            # Assuming your make_agent object has a standard .to(device) method.
-            # If not, you may need to call agent_obj.algo.actor_critic.to(device)
-            agent_obj.to(device)
-
-    print("[DEBUG] Setup Complete. Entering main loop...")
-
     # === Configure checkpointing ===
     timer = timeit.default_timer
     initial_update_count = 0
@@ -213,8 +195,28 @@ if __name__ == '__main__':
             num_action_repeat=args.num_action_repeat,
             use_global_critic=args.use_global_critic,
             use_global_policy=args.use_global_policy,
-            device=device)
+            device=cpu_device)
         print("[DEBUG] Evaluator initialized.")
+
+    # === NOW INITIALIZE XLA AND MOVE MODELS ====
+    print("[DEBUG] Initializing XLA and transferring models to TPU...")
+    import torch_xla.core.xla_model as xm
+    device = xm.xla_device()
+    print(f'Using XLA Device: {device}\n')
+    
+    # Update the runner's internal device tracker
+    train_runner.device = device
+    
+    # Explicitly move all initialized agent models to the TPU
+    if evaluator:
+        evaluator.device = device
+    for key, agent_obj in train_runner.agents.items():
+        if agent_obj is not None:
+            # Assuming your make_agent object has a standard .to(device) method.
+            # If not, you may need to call agent_obj.algo.actor_critic.to(device)
+            agent_obj.to(device)
+
+    print("[DEBUG] Setup Complete. Entering main loop...")
     # === Train === 
     last_checkpoint_idx = getattr(train_runner, args.checkpoint_basis)
     update_start_time = timer()
