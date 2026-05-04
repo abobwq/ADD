@@ -35,6 +35,12 @@ import torch_xla.core.xla_model as xm
 # import wandb
 
 if __name__ == '__main__':
+    # --- ADD THESE 3 LINES ---
+    import torch.multiprocessing as mp
+    try:
+        mp.set_start_method('spawn')
+    except RuntimeError:
+        pass # Prevents crashing if it was already set
     print("[DEBUG] train.py started!")
     os.environ["OMP_NUM_THREADS"] = "1"
 
