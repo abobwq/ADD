@@ -11,40 +11,38 @@ import timeit
 import logging
 from arguments import parser
 
-import torch
-import gym
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from baselines.logger import HumanOutputFormat
-
-display = None
-
-import pyvirtualdisplay
-
-
-from envs.multigrid import *
-from envs.multigrid.adversarial import *
-from envs.box2d import *
-from envs.bipedalwalker import *
-from envs.runners.adversarial_runner import AdversarialRunner 
-from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env, make_plr_args, save_images, seed
-from eval import Evaluator
-import torch as th
-
-# import wandb
+# DO NOT put any torch, gym, or baselines imports out here!
 
 if __name__ == '__main__':
-    # --- ADD THESE 3 LINES ---
+    # 1. Setup multiprocessing FIRST
     import torch.multiprocessing as mp
     try:
         mp.set_start_method('spawn')
     except RuntimeError:
-        pass # Prevents crashing if it was already set
-    # --- ADD THESE 2 LINES ---
-    import os
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # Hides the spammy warnings
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # Forces TF to stick to the CPU
-    # -------------------------
+        pass
+        
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+    # 2. NOW safely import the heavy libraries. 
+    # Background workers will ignore this entire block when they boot up!
+    import torch
+    import gym
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    from baselines.logger import HumanOutputFormat
+    
+    display = None
+    import pyvirtualdisplay
+    
+    from envs.multigrid import *
+    from envs.multigrid.adversarial import *
+    from envs.box2d import *
+    from envs.bipedalwalker import *
+    from envs.runners.adversarial_runner import AdversarialRunner 
+    from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env, make_plr_args, save_images, seed
+    from eval import Evaluator
+    import torch as th
+
     print("[DEBUG] train.py started!")
     os.environ["OMP_NUM_THREADS"] = "1"
 
