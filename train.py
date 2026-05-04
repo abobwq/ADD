@@ -30,7 +30,6 @@ from envs.runners.adversarial_runner import AdversarialRunner
 from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env, make_plr_args, save_images, seed
 from eval import Evaluator
 import torch as th
-import torch_xla.core.xla_model as xm
 
 # import wandb
 
@@ -41,6 +40,11 @@ if __name__ == '__main__':
         mp.set_start_method('spawn')
     except RuntimeError:
         pass # Prevents crashing if it was already set
+    # --- ADD THESE 2 LINES ---
+    import os
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" # Hides the spammy warnings
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # Forces TF to stick to the CPU
+    # -------------------------
     print("[DEBUG] train.py started!")
     os.environ["OMP_NUM_THREADS"] = "1"
 
@@ -136,6 +140,7 @@ if __name__ == '__main__':
 
     # === NOW INITIALIZE XLA AND MOVE MODELS ====
     print("[DEBUG] Initializing XLA and transferring models to TPU...")
+    import torch_xla.core.xla_model as xm
     device = xm.xla_device()
     print(f'Using XLA Device: {device}\n')
     
