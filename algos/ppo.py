@@ -141,10 +141,8 @@ class PPO():
                 print("      -> [DEBUG PPO] XLA step traced!")
 
         num_updates = self.ppo_epoch * self.num_mini_batch
-        print("    -> [DEBUG PPO] Hitting torch_xla.sync()... (THIS MIGHT TAKE 5+ MINS ON THE FIRST RUN)")
         # 1. Sync the device first to finish all TPU computations
-        torch_xla.sync()
-        print("    -> [DEBUG PPO] TPU Sync complete!")
+        #torch_xla.sync()
 
         # 2. NOW you can safely pull the accumulated tensor values 
         # back to the CPU and divide them
