@@ -131,20 +131,23 @@ class PPO():
                     if not discard_grad:
                         self.optimizer.step()
                                     
-                    value_loss_epoch += value_loss.item()
-                    action_loss_epoch += action_loss.item()
-                    dist_entropy_epoch += dist_entropy.item()
+                    value_loss_epoch += value_loss.detach()
+                    action_loss_epoch += action_loss.detach()
+                    dist_entropy_epoch += dist_entropy.detach()
 
         num_updates = self.ppo_epoch * self.num_mini_batch
 
-        value_loss_epoch /= num_updates
-        action_loss_epoch /= num_updates
-        dist_entropy_epoch /= num_updates
+        # 1. Sync the device first to finish all TPU computations
+        torch_xla.sync()
+
+        # 2. NOW you can safely pull the accumulated tensor values 
+        # back to the CPU and divide them
+        value_loss_epoch = (value_loss_epoch / num_updates).item()
+        action_loss_epoch = (action_loss_epoch / num_updates).item()
+        dist_entropy_epoch = (dist_entropy_epoch / num_updates).item()
 
         info = {}
         if self.log_grad_norm:
             info = {'grad_norms': grad_norms}
-        
-        torch_xla.sync()
 
         return value_loss_epoch, action_loss_epoch, dist_entropy_epoch, info
