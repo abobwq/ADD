@@ -35,6 +35,7 @@ import torch_xla.core.xla_model as xm
 # import wandb
 
 if __name__ == '__main__':
+    print("[DEBUG] train.py started!")
     os.environ["OMP_NUM_THREADS"] = "1"
 
     args = parser.parse_args()
@@ -92,11 +93,13 @@ if __name__ == '__main__':
     seed(args.seed)
     
     # === Create parallel envs ===
+    print("[DEBUG] Building Vectorized Environments...")
     venv, ued_venv = create_parallel_env(args)
+    print("[DEBUG] Environments built successfully!")
 
     is_training_env = args.ued_algo in ['paired', 'flexible_paired', 'minimax']
     is_paired = args.ued_algo in ['paired', 'flexible_paired']
-
+    print("[DEBUG] Initializing Models (Actor, Critic, etc)...")
     agent = make_agent(name='agent', env=venv, args=args, device=device)
     adversary_agent, adversary_env = None, None
     if is_paired:
@@ -109,6 +112,7 @@ if __name__ == '__main__':
         adversary_env.random()
 
     # === Create runner ===
+    print("[DEBUG] Creating AdversarialRunner...")
     plr_args = None
     if args.use_plr:
         plr_args = make_plr_args(args, venv.observation_space, venv.action_space)
@@ -179,7 +183,6 @@ if __name__ == '__main__':
             use_global_critic=args.use_global_critic,
             use_global_policy=args.use_global_policy,
             device=device)
-
     # === Train === 
     last_checkpoint_idx = getattr(train_runner, args.checkpoint_basis)
     update_start_time = timer()
