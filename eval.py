@@ -268,22 +268,33 @@ class Evaluator(object):
 		env_returns = {}
 		env_solved_episodes = {}
 		
+		# --- 1. Identify the TPU device from the agent ---
+		model_device = next(agent.algo.actor_critic.parameters()).device
+
 		for env_name, venv in self.venv.items():
 			returns = []
 			solved_episodes = 0
 
 			obs = venv.reset()
+			# --- 2. Initialize hidden states & masks on the TPU ---
 			recurrent_hidden_states = torch.zeros(
-				self.num_processes, agent.algo.actor_critic.recurrent_hidden_state_size, device=self.device)
+				self.num_processes, agent.algo.actor_critic.recurrent_hidden_state_size, device=model_device)
 			if agent.algo.actor_critic.is_recurrent and agent.algo.actor_critic.rnn.arch == 'lstm':
 				recurrent_hidden_states = (recurrent_hidden_states, torch.zeros_like(recurrent_hidden_states))
-			masks = torch.ones(self.num_processes, 1, device=self.device)
+			masks = torch.ones(self.num_processes, 1, device=model_device)
 
 			pbar = None
 			if show_progress:
 				pbar = tqdm(total=self.num_episodes)
 
 			while len(returns) < self.num_episodes:
+				# --- 3. Move the CPU observations to the TPU ---
+				if isinstance(obs, dict):
+					for k in obs:
+						obs[k] = obs[k].to(model_device)
+				else:
+					obs = obs.to(model_device)
+
 				# Sample actions
 				with torch.no_grad():
 					_, action, _, recurrent_hidden_states = agent.act(
